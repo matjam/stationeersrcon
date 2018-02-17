@@ -15,9 +15,10 @@ import (
 
 var (
 	app             = kingpin.New("srcon", "a CLI interface to Stationeers dedicated server RCON.")
-	serverIP        = app.Flag("ip", "Server IP to connect to.").Default("127.0.0.1").IP()
-	port            = app.Flag("port", "Port to connect to").Default("27500").String()
-	rconPassword    = app.Flag("password", "Password to use for the RCON command.").Required().String()
+	configFlag      = app.Flag("config", "Path to a json configuration file for the tool.").Short('c').String()
+	serverIP        = app.Flag("ip", "Server IP to connect to.").IP()
+	port            = app.Flag("port", "Port to connect to").String()
+	rconPassword    = app.Flag("password", "Password to use for the RCON command.").String()
 	statusCmd       = app.Command("status", "Fetch the status of the Stationeers server.")
 	saveCmd         = app.Command("save", "Saves the game to a specified file.")
 	saveCmdArg      = saveCmd.Arg("savefile", "Filename to save the game to.").Required().String()
@@ -36,7 +37,11 @@ var (
 	clearallCmd     = app.Command("clearall", "Delete disconnected players from the server.")
 )
 
+var config *Config
+
 func main() {
+	app.HelpFlag.Short('h')
+
 	cookieJar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Jar: cookieJar,
@@ -110,9 +115,40 @@ func rconClearall(c *http.Client) {
 }
 
 func rconLogin(c *http.Client) {
-	escapedCommand := url.PathEscape(fmt.Sprintf("login %s", *rconPassword))
+	config = loadConfig()
+	if len(config.Password) == 0 && len(*rconPassword) == 0 {
+		// No password provided, so we need to prompt for one
+		config.Password = loginPrompt()
+	}
 
-	request := fmt.Sprintf("http://%s:%s/console/run?command=%s", serverIP.String(), *port, escapedCommand)
+	if len(config.Password) == 0 && len(*rconPassword) > 0 {
+		// We don't have a saved password, but one was provided.
+		config.Password = *rconPassword
+	}
+
+	if serverIP.String() != "<nil>" {
+		config.Hostname = serverIP.String()
+	}
+
+	if len(config.Hostname) == 0 {
+		config.Hostname = "127.0.0.1"
+	}
+
+	if len(*port) > 0 {
+		config.Port = *port
+	}
+
+	if len(config.Port) == 0 {
+		// default
+		config.Port = "27500"
+	}
+
+	// By this point we should have a valid Config, so save it.
+	saveConfig(config)
+
+	escapedCommand := url.PathEscape(fmt.Sprintf("login %s", config.Password))
+
+	request := fmt.Sprintf("http://%s:%s/console/run?command=%s", config.Hostname, config.Port, escapedCommand)
 	_, err := c.Get(request)
 
 	if err != nil {
@@ -124,7 +160,7 @@ func rconLogin(c *http.Client) {
 func rconExec(c *http.Client, command string) {
 	escapedCommand := url.PathEscape(command)
 
-	request := fmt.Sprintf("http://%s:%s/console/run?command=%s", serverIP.String(), *port, escapedCommand)
+	request := fmt.Sprintf("http://%s:%s/console/run?command=%s", config.Hostname, config.Port, escapedCommand)
 	resp, err := c.Get(request)
 
 	if err != nil {
