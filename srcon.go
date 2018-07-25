@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strings"
 
 	"github.com/jaytaylor/html2text"
 )
@@ -44,6 +45,9 @@ func (c *Client) Shutdown(message string, timeout int) (string, error) {
 
 // Notice sends a message to all connected clients.
 func (c *Client) Notice(message string) (string, error) {
+	if len(strings.Fields(message)) == 1 {
+		return c.Exec(fmt.Sprintf("notice %s", message))
+	}
 	return c.Exec(fmt.Sprintf("notice \"%s\"", message))
 }
 
