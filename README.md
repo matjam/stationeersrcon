@@ -2,15 +2,16 @@
 A cli to the stationeers rcon for Stationeers dedicated servers.
 
 ```
-usage: srcon --password=PASSWORD [<flags>] <command> [<args> ...]
+usage: srcon [<flags>] <command> [<args> ...]
 
 a CLI interface to Stationeers dedicated server RCON.
 
 Flags:
-  --help               Show context-sensitive help (also try --help-long and --help-man).
-  --ip=127.0.0.1       Server IP to connect to.
-  --port="27500"       Port to connect to
-  --password=PASSWORD  Password to use for the RCON command.
+  -h, --help               Show context-sensitive help (also try --help-long and --help-man).
+  -c, --config=CONFIG      Path to a json configuration file for the tool.
+      --ip=IP              Server IP to connect to.
+      --port=PORT          Port to connect to
+      --password=PASSWORD  Password to use for the RCON command.
 
 Commands:
   help [<command>...]
@@ -39,6 +40,9 @@ Commands:
 
   clearall
     Delete disconnected players from the server.
+
+  hungerRate <rate>
+    Set the hungerRate on the server to the given number.
 ```
 
 ## Building and Installing
