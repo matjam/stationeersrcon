@@ -2,13 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"os"
+	"strconv"
 
-	"github.com/jaytaylor/html2text"
+	srcon "github.com/matjam/stationeersrcon"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -38,49 +35,53 @@ var (
 )
 
 var config *Config
+var client *srcon.Client
 
 func main() {
+	var r string
+	var err error
 	app.HelpFlag.Short('h')
-
-	cookieJar, _ := cookiejar.New(nil)
-	client := &http.Client{
-		Jar: cookieJar,
-	}
 
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	rconLogin(client)
+	client = rconLogin()
 
 	switch cmd {
 	case statusCmd.FullCommand():
-		rconStatus(client)
+		r, err = rconStatus()
 	case saveCmd.FullCommand():
-		rconSave(client)
+		r, err = rconSave()
 	case shutdownCmd.FullCommand():
-		rconShutdown(client)
+		r, err = rconShutdown()
 	case noticeCmd.FullCommand():
-		rconNotice(client)
+		r, err = rconNotice()
 	case banCmd.FullCommand():
-		rconBan(client)
+		r, err = rconBan()
 	case unbanCmd.FullCommand():
-		rconUnban(client)
+		r, err = rconUnban()
 	case kickCmd.FullCommand():
-		rconKick(client)
+		r, err = rconKick()
 	case clearallCmd.FullCommand():
-		rconClearall(client)
+		r, err = rconClearall()
 	}
 
+	if err != nil {
+		fmt.Println("error: ", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println(r)
 }
 
-func rconStatus(c *http.Client) {
-	rconExec(c, "status")
+func rconStatus() (string, error) {
+	return client.Status()
 }
 
-func rconSave(c *http.Client) {
-	rconExec(c, fmt.Sprintf("save %s", *saveCmdArg))
+func rconSave() (string, error) {
+	return client.Save(*saveCmdArg)
 }
 
-func rconShutdown(c *http.Client) {
+func rconShutdown() (string, error) {
 	command := fmt.Sprintf("shutdown")
 
 	if len(*shutdownMsg) > 0 {
@@ -90,31 +91,39 @@ func rconShutdown(c *http.Client) {
 	if len(*shutdownTimeout) > 0 {
 		command += fmt.Sprintf(" -t %s", *shutdownTimeout)
 	}
-
-	rconExec(c, command)
+	timeout, err := strconv.Atoi(*shutdownTimeout)
+	if err != nil {
+		return "", err
+	}
+	return client.Shutdown(*shutdownMsg, timeout)
 }
 
-func rconNotice(c *http.Client) {
-	rconExec(c, fmt.Sprintf("notice \"%s\"", *noticeCmdArg))
+func rconNotice() (string, error) {
+	return client.Notice(*noticeCmdArg)
 }
 
-func rconBan(c *http.Client) {
-	rconExec(c, fmt.Sprintf("ban %s %s", *banPlayer, *banTimeout))
+func rconBan() (string, error) {
+	timeout, err := strconv.Atoi(*banTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	return client.Ban(*banPlayer, timeout)
 }
 
-func rconUnban(c *http.Client) {
-	rconExec(c, fmt.Sprintf("unban %s", *unbanPlayer))
+func rconUnban() (string, error) {
+	return client.Unban(*unbanPlayer)
 }
 
-func rconKick(c *http.Client) {
-	rconExec(c, fmt.Sprintf("kick %s", *kickPlayer))
+func rconKick() (string, error) {
+	return client.Kick(*kickPlayer)
 }
 
-func rconClearall(c *http.Client) {
-	rconExec(c, "clearall")
+func rconClearall() (string, error) {
+	return client.ClearAll()
 }
 
-func rconLogin(c *http.Client) {
+func rconLogin() *srcon.Client {
 	config = loadConfig()
 	if len(config.Password) == 0 && len(*rconPassword) == 0 {
 		// No password provided, so we need to prompt for one
@@ -146,30 +155,19 @@ func rconLogin(c *http.Client) {
 	// By this point we should have a valid Config, so save it.
 	saveConfig(config)
 
-	escapedCommand := url.PathEscape(fmt.Sprintf("login %s", config.Password))
-
-	request := fmt.Sprintf("http://%s:%s/console/run?command=%s", config.Hostname, config.Port, escapedCommand)
-	_, err := c.Get(request)
-
+	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		fmt.Println("error: ", err.Error())
 		os.Exit(1)
 	}
-}
 
-func rconExec(c *http.Client, command string) {
-	escapedCommand := url.PathEscape(command)
-
-	request := fmt.Sprintf("http://%s:%s/console/run?command=%s", config.Hostname, config.Port, escapedCommand)
-	resp, err := c.Get(request)
+	client := srcon.New(config.Hostname, port)
+	err = client.Login(config.Password)
 
 	if err != nil {
 		fmt.Println("error: ", err.Error())
 		os.Exit(1)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	text, err := html2text.FromString(string(body), html2text.Options{PrettyTables: true})
-
-	fmt.Println(string(text))
+	return client
 }
