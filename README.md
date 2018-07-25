@@ -53,3 +53,11 @@ go install ./...
 ```
 
 This will build and install the binary into your $GOBIN directory. This could be copied anywhere in your path.
+
+# Prebuilt Binary Releases
+
+You can find the latest release here:
+
+  https://github.com/matjam/stationeersrcon/releases/tag/v1.2.0
+
+Download the binary for your platform and just drop it in your path somewhere.
