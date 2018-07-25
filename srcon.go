@@ -67,6 +67,11 @@ func (c *Client) ClearAll() (string, error) {
 	return c.Exec("clearall")
 }
 
+// HungerRate sets the global hunger rate for the server.
+func (c *Client) HungerRate(rate int) (string, error) {
+	return c.Exec(fmt.Sprintf("hungerRate %d", rate))
+}
+
 // New will create a new connection handle for connecting to a Stationeers RCON server.
 func New(hostName string, port int) *Client {
 	cookieJar, _ := cookiejar.New(nil)

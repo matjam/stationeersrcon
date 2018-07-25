@@ -32,6 +32,8 @@ var (
 	kickCmd         = app.Command("kick", "Kick player from the server.")
 	kickPlayer      = kickCmd.Arg("steamID", "Steam ID to kick.").Required().String()
 	clearallCmd     = app.Command("clearall", "Delete disconnected players from the server.")
+	hungerRateCmd   = app.Command("hungerRate", "Set the hungerRate on the server to the given number.")
+	hungerRate      = hungerRateCmd.Arg("rate", "The rate to use. Use 0 to disable hunger completely.").Required().Int()
 )
 
 var config *Config
@@ -63,6 +65,8 @@ func main() {
 		r, err = rconKick()
 	case clearallCmd.FullCommand():
 		r, err = rconClearall()
+	case hungerRateCmd.FullCommand():
+		r, err = rconHungerRate()
 	}
 
 	if err != nil {
@@ -121,6 +125,10 @@ func rconKick() (string, error) {
 
 func rconClearall() (string, error) {
 	return client.ClearAll()
+}
+
+func rconHungerRate() (string, error) {
+	return client.HungerRate(*hungerRate)
 }
 
 func rconLogin() *srcon.Client {

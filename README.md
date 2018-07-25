@@ -41,12 +41,11 @@ Commands:
     Delete disconnected players from the server.
 ```
 
-## Building
+## Building and Installing
 
 ```
-go get github.com/jaytaylor/html2text
-go get gopkg.in/alecthomas/kingpin.v2
-make
+go get ./...
+go install ./...
 ```
 
-Only tested on MacOS. Should work fine on Linux. Windows you might have to build manually with `go build -o srcon cmd/srcon/*.go` unless you run the build inside a bash shell of some kind.
+This will build and install the binary into your $GOBIN directory. This could be copied anywhere in your path.
