@@ -1,6 +1,7 @@
 APP=srcon
-
 VERSION=1.2.0
+
+go get -u ./...
 
 all: dist/$(APP)-$(VERSION)-linux.zip dist/$(APP)-$(VERSION)-darwin.zip dist/$(APP)-$(VERSION)-windows.zip
 
