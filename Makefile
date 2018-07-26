@@ -1,9 +1,9 @@
 APP=srcon
 VERSION=1.2.0
 
-go get -u ./...
 
-all: dist/$(APP)-$(VERSION)-linux.zip dist/$(APP)-$(VERSION)-darwin.zip dist/$(APP)-$(VERSION)-windows.zip
+
+all: deps dist/$(APP)-$(VERSION)-linux.zip dist/$(APP)-$(VERSION)-darwin.zip dist/$(APP)-$(VERSION)-windows.zip
 
 dist/$(APP)-$(VERSION)-linux.zip: build/linux/$(APP) dist
 	cd build/linux; zip ../../dist/$(APP)-$(VERSION)-linux.zip $(APP)
@@ -13,6 +13,9 @@ dist/$(APP)-$(VERSION)-darwin.zip: build/darwin/$(APP) dist
 
 dist/$(APP)-$(VERSION)-windows.zip: build/windows/$(APP).exe dist
 	cd build/windows; zip ../../dist/$(APP)-$(VERSION)-windows.zip $(APP).exe
+
+.PHONY: deps
+	go get -u ./...
 
 dist:
 	mkdir -p dist
