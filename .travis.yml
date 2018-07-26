@@ -7,3 +7,5 @@ go:
 
 go_import_path: github.com/matjam/stationeersrcon
 
+notifications:
+  email: false

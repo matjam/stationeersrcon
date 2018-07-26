@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/matjam/stationeersrcon.svg?branch=master)](https://travis-ci.org/matjam/stationeersrcon)
+[![Documentation](https://raw.githubusercontent.com/golang/gddo/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/matjam/stationeersrcon)
+
 # stationeersrcon
 A cli to the stationeers rcon for Stationeers dedicated servers.
 
