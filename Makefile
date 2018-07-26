@@ -15,6 +15,7 @@ dist/$(APP)-$(VERSION)-windows.zip: build/windows/$(APP).exe dist
 	cd build/windows; zip ../../dist/$(APP)-$(VERSION)-windows.zip $(APP).exe
 
 .PHONY: deps
+deps:
 	go get -u ./...
 
 dist:
