@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -21,12 +22,12 @@ var (
 	saveCmdArg      = saveCmd.Arg("savefile", "Filename to save the game to.").Required().String()
 	shutdownCmd     = app.Command("shutdown", "Shutdowns the server")
 	shutdownMsg     = shutdownCmd.Flag("message", "message to send to all players").Short('m').String()
-	shutdownTimeout = shutdownCmd.Flag("timeout", "timeout in seconds").Short('t').String()
+	shutdownTimeout = shutdownCmd.Flag("timeout", "timeout in seconds").Short('t').Int()
 	noticeCmd       = app.Command("notice", "Sends a notice to all players")
 	noticeCmdArg    = noticeCmd.Arg("message", "Message to send.").Required().String()
 	banCmd          = app.Command("ban", "Bans a player for a specific time.")
 	banPlayer       = banCmd.Arg("steamId", "Steam ID to ban").Required().String()
-	banTimeout      = banCmd.Arg("timeout", "How long to ban for. Timeout is a double in hours. 0.5 is 30 minutes, 0 is infinite.").Required().String()
+	banTimeout      = banCmd.Arg("timeout", "How long to ban for. Timeout is a double in hours. 0.5 is 30 minutes, 0 is infinite.").Required().Int()
 	unbanCmd        = app.Command("unban", "Remove a player from the ban list.")
 	unbanPlayer     = unbanCmd.Arg("steamID", "Steam ID to remove from the ban").Required().String()
 	kickCmd         = app.Command("kick", "Kick player from the server.")
@@ -40,7 +41,7 @@ var config *Config
 var client *srcon.Client
 
 func main() {
-	var r string
+	var resp string
 	var err error
 	app.HelpFlag.Short('h')
 
@@ -50,31 +51,30 @@ func main() {
 
 	switch cmd {
 	case statusCmd.FullCommand():
-		r, err = rconStatus()
+		resp, err = rconStatus()
 	case saveCmd.FullCommand():
-		r, err = rconSave()
+		resp, err = rconSave()
 	case shutdownCmd.FullCommand():
-		r, err = rconShutdown()
+		resp, err = rconShutdown()
 	case noticeCmd.FullCommand():
-		r, err = rconNotice()
+		resp, err = rconNotice()
 	case banCmd.FullCommand():
-		r, err = rconBan()
+		resp, err = rconBan()
 	case unbanCmd.FullCommand():
-		r, err = rconUnban()
+		resp, err = rconUnban()
 	case kickCmd.FullCommand():
-		r, err = rconKick()
+		resp, err = rconKick()
 	case clearallCmd.FullCommand():
-		r, err = rconClearall()
+		resp, err = rconClearall()
 	case hungerRateCmd.FullCommand():
-		r, err = rconHungerRate()
+		resp, err = rconHungerRate()
 	}
 
 	if err != nil {
-		fmt.Println("error: ", err.Error())
-		os.Exit(1)
+		log.Fatalf("Error processing command: \n%v", err)
 	}
 
-	fmt.Println(r)
+	fmt.Println(resp)
 }
 
 func rconStatus() (string, error) {
@@ -86,20 +86,7 @@ func rconSave() (string, error) {
 }
 
 func rconShutdown() (string, error) {
-	command := fmt.Sprintf("shutdown")
-
-	if len(*shutdownMsg) > 0 {
-		command += fmt.Sprintf(" -m \"%s\"", *shutdownMsg)
-	}
-
-	if len(*shutdownTimeout) > 0 {
-		command += fmt.Sprintf(" -t %s", *shutdownTimeout)
-	}
-	timeout, err := strconv.Atoi(*shutdownTimeout)
-	if err != nil {
-		return "", err
-	}
-	return client.Shutdown(*shutdownMsg, timeout)
+	return client.Shutdown(*shutdownMsg, *shutdownTimeout)
 }
 
 func rconNotice() (string, error) {
@@ -107,12 +94,7 @@ func rconNotice() (string, error) {
 }
 
 func rconBan() (string, error) {
-	timeout, err := strconv.Atoi(*banTimeout)
-	if err != nil {
-		return "", err
-	}
-
-	return client.Ban(*banPlayer, timeout)
+	return client.Ban(*banPlayer, *banTimeout)
 }
 
 func rconUnban() (string, error) {
@@ -165,16 +147,14 @@ func rconLogin() *srcon.Client {
 
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
-		fmt.Println("error: ", err.Error())
-		os.Exit(1)
+		log.Fatalf("Error converting port: \n%v", err)
 	}
 
 	client := srcon.New(config.Hostname, port)
 	err = client.Login(config.Password)
 
 	if err != nil {
-		fmt.Println("error: ", err.Error())
-		os.Exit(1)
+		log.Fatalf("Error logging into RCON: \n%v", err)
 	}
 
 	return client
